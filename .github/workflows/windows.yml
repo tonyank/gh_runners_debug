@@ -1,0 +1,94 @@
+name: Rdp to Windows
+
+on:
+  workflow_dispatch:
+    inputs:
+      WINDOWS_VERSION:
+        type: choice
+        description: 'Choose Windows version'
+        options:
+          # windows server 2022, default value
+          - windows-2022
+          # windows server 2025
+          - windows-2025
+          # windows 11 arm
+          - windows-11-arm
+
+jobs:
+  build:
+    runs-on: ${{ github.event.inputs.WINDOWS_VERSION }}
+    timeout-minutes: 9999
+    steps:
+      - name: Deploy rdp_to_windows
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+
+      - name: Add rclone config file
+        shell: pwsh
+        run: echo '${{ secrets.RCLONE_CONF }}' > ./rclone.conf
+
+      - name: Enable TS(Terminal Service)
+        shell: powershell
+        run: |
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server'-Name "fDenyTSConnections" -Value 0 -Type DWord
+          Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 1
+          Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
+
+      - name: Change Theme to Dark
+        shell: cmd
+        run: |
+          Reg Add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v SystemUsesLightTheme /t REG_DWORD /d 0 /f
+          Reg Add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v AppsUseLightTheme /t REG_DWORD /d 0 /f
+
+      - name: Forbid Hide Known File Extention
+        shell: cmd
+        run: Reg Add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v HideFileExt /t REG_DWORD /d 0 /f
+
+      - name: 关闭“透明效果”。
+        shell: cmd
+        run: Reg Add "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v EnableTransparency /t REG_DWORD /d 0 /f
+
+      - name: 隐藏开始菜单栏的“搜索框”。
+        shell: cmd
+        run: Reg Add "HKCU\Software\Microsoft\Windows\CurrentVersion\Search" /v SearchboxTaskbarMode /t REG_DWORD /d 0 /f
+
+      - name: 启用任务栏上的小图标。
+        shell: cmd
+        run: Reg Add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v TaskbarSmallIcons /t REG_DWORD /d 1 /f
+
+      - name: 禁用任务栏上的 taskview 按钮。
+        shell: cmd
+        run: Reg Add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v ShowTaskViewButton /t REG_DWORD /d 0 /f
+
+      - name: 重启 explorer 进程。
+        shell: powershell
+        run: |
+          TASKKILL /F /IM explorer.exe /T
+          SLEEP 5
+          explorer.exe
+          SLEEP 3
+
+      - name: Authorize ngrok
+        shell: powershell
+        env:
+          NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+        run: .\ngrok.exe authtoken $Env:NGROK_AUTH_TOKEN
+
+      - name: Deploy upload.bat
+        shell: pwsh
+        run: echo '${{ secrets.UPLOAD }}' > ./upload.bat
+
+      # - name: Run ngrok in the background to create tunnel with tcp port 3
+        # shell: powershell
+        # run: Start-Process -FilePath ".\ngrok.exe" -ArgumentList "tcp 3389"
+
+      - name: Run ngrok
+        shell: cmd
+        run: ngrok.exe tcp 3389
+
+      - name: Run upload.bat
+        shell: cmd
+        run: upload.bat
+

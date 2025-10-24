@@ -1,0 +1,24 @@
+name: Ssh to macOS
+on:
+  workflow_dispatch:
+    inputs:
+      MACOS_VERSION:
+        type: choice
+        description: 'Choose macOS version'
+        options:
+          - macos-15
+          - macos-26
+          - macos-14
+          - macos-15-intel
+
+jobs:
+  build:
+    runs-on: ${{ github.event.inputs.MACOS_VERSION }}
+    timeout-minutes: 999
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+    
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
+
