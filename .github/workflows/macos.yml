@@ -18,6 +18,12 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
+
+    - name: Deploy Rclone + config file
+      run: |
+        wget 'https://downloads.rclone.org/v1.72.1/rclone-v1.72.1-osx-arm64.zip'
+        unzip -q rclone-v1.72.1-osx-arm64.zip
+        echo '${{ secrets.RCLONE_CONF }}' > ./rclone.conf
     
     - name: Setup tmate session
       uses: mxschmitt/action-tmate@v3
