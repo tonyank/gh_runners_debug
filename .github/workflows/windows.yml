@@ -22,8 +22,8 @@ jobs:
       - name: Deploy Ngrok
         shell: bash
         run: |
-          wget -O ngrok.tgz https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz
-          tar -xf ngrok.tgz
+          curl -L -o ngrok.zip https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip
+          unzip -q ngrok.tgz
 
       - name: Add rclone config file
         shell: pwsh
