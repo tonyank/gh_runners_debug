@@ -13,7 +13,9 @@ on:
           - windows-2025
           # windows 11 arm
           - windows-11-arm
-
+          # windows latest
+          - windows-latest
+          
 jobs:
   build:
     runs-on: ${{ github.event.inputs.WINDOWS_VERSION }}
