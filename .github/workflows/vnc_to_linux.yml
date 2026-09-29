@@ -9,7 +9,7 @@ jobs:
         run: |
           sudo apt update
           # 安装轻量级桌面 (XFCE4) 和用于网页转换 VNC 的 noVNC/websockify
-          sudo apt-get install -y xfce4 xfce4-goodies tightvncserver novnc websockify
+          sudo apt install -y xfce4 xfce4-goodies tightvncserver novnc websockify
 
       - name: 2. 初始化并启动 VNC 服务
         run: |
