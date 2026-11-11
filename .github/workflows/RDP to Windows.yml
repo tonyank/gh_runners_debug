@@ -34,10 +34,27 @@ jobs:
       - name: Enable TS(Terminal Service)
         shell: powershell
         run: |
+          # 1. 开启远程桌面并放行防火墙
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0 -Type DWord
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 0
-          Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
+
+          # 2. 关闭 NLA 与降级安全层（同时写入组策略路径防止被覆盖）
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 0 -Type DWord
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "SecurityLayer" -Value 1 -Type DWord
+          New-Item -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services' -Force | Out-Null
+          Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services' -Name "UserAuthentication" -Value 0 -Type DWord
+          Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services' -Name "SecurityLayer" -Value 1 -Type DWord
+
+           # 3. 【关键】禁用 AVC/H.264 硬件编码，解决 Mac/iOS 客户端连接无显卡虚拟机报 0x4 的问题
+           Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services' -Name "AVC444ModePreferred" -Value 0 -Type DWord
+           Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services' -Name "AVCHardwareEncodePreferred" -Value 0 -Type DWord
+
+           # 4. 重置密码并确保在管理员组
+           Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
+           Add-LocalGroupMember -Group "Administrators" -Member "runneradmin" -ErrorAction SilentlyContinue
+
+           # 5. 【关键】重启远程桌面服务使上述所有修改立即生效
+           Restart-Service -Name "TermService" -Force
 
       - name: Change Theme to Dark
         shell: cmd
@@ -75,13 +92,13 @@ jobs:
         shell: cmd
         run: Reg Add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v ShowTaskViewButton /t REG_DWORD /d 0 /f
 
-      # - name: 重启 explorer 进程。
-        # shell: powershell
-        # run: |
-          # TASKKILL /F /IM explorer.exe /T
-          # SLEEP 5
-          # explorer.exe
-          # SLEEP 3
+      - name: 重启 explorer 进程。
+        shell: powershell
+        run: |
+          TASKKILL /F /IM explorer.exe /T
+          SLEEP 5
+          explorer.exe
+          SLEEP 3
 
       - name: Authorize ngrok
         shell: powershell
