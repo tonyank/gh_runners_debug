@@ -1,4 +1,4 @@
-name: Rdp to Windows
+name: RDP to Windows
 
 on:
   workflow_dispatch:
@@ -42,8 +42,14 @@ jobs:
       - name: Change Theme to Dark
         shell: cmd
         run: |
-          Reg Add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v SystemUsesLightTheme /t REG_DWORD /d 0 /f
-          Reg Add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v AppsUseLightTheme /t REG_DWORD /d 0 /f
+          Reg Query "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v SystemUsesLightTheme >nul 2>&1
+          if %errorlevel% equ 0 (
+            Reg Add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v SystemUsesLightTheme /t REG_DWORD /d 0 /f
+          )
+          Reg Query "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v AppsUseLightTheme >nul 2>&1
+          if %errorlevel% equ 0 (
+            Reg Add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v AppsUseLightTheme /t REG_DWORD /d 0 /f
+          )
 
       - name: Forbid Hide Known File Extention
         shell: cmd
@@ -51,7 +57,11 @@ jobs:
 
       - name: 关闭“透明效果”。
         shell: cmd
-        run: Reg Add "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v EnableTransparency /t REG_DWORD /d 0 /f
+        run: |
+          reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v EnableTransparency >nul 2>&1
+          if %errorlevel% equ 0 (
+            reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v EnableTransparency /t REG_DWORD /d 0 /f
+          )
 
       - name: 隐藏开始菜单栏的“搜索框”。
         shell: cmd
@@ -65,13 +75,13 @@ jobs:
         shell: cmd
         run: Reg Add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v ShowTaskViewButton /t REG_DWORD /d 0 /f
 
-      - name: 重启 explorer 进程。
-        shell: powershell
-        run: |
-          TASKKILL /F /IM explorer.exe /T
-          SLEEP 5
-          explorer.exe
-          SLEEP 3
+      # - name: 重启 explorer 进程。
+        # shell: powershell
+        # run: |
+          # TASKKILL /F /IM explorer.exe /T
+          # SLEEP 5
+          # explorer.exe
+          # SLEEP 3
 
       - name: Authorize ngrok
         shell: powershell
