@@ -17,14 +17,14 @@ on:
           - windows-latest
           
 jobs:
-  build:
+  Build:
     runs-on: ${{ github.event.inputs.WINDOWS_VERSION }}
     timeout-minutes: 9999
     steps:
       - name: Deploy Ngrok
         shell: bash
         run: |
-          curl -L -o ngrok.zip https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip
+          curl -L -o ngrok.zip https://bin.ngrok.com/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip
           unzip -q ngrok.zip
 
       - name: Add rclone config file
@@ -99,7 +99,7 @@ jobs:
 
       - name: Run ngrok
         shell: cmd
-        run: ngrok.exe tcp 3389
+        run: .\ngrok.exe tcp 3389
 
       - name: Run upload.bat
         shell: cmd
