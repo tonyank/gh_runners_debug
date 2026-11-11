@@ -97,6 +97,12 @@ jobs:
         # shell: powershell
         # run: Start-Process -FilePath ".\ngrok.exe" -ArgumentList "tcp 3389"
 
+      - name: Verify RDP listening
+        shell: powershell
+        run: |
+          netstat -ano | findstr :3389
+          Get-Service TermService | Select-Object Status
+   
       - name: Run ngrok
         shell: cmd
         run: .\ngrok.exe tcp 3389
